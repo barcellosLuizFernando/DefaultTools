@@ -6,6 +6,9 @@
 package tools;
 
 import conn.ConexaoMySQL;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -24,11 +27,13 @@ import net.sf.jasperreports.view.JasperViewer;
  */
 public class ImprimeRelatorio {
 
-    private ConexaoMySQL cn;
+    private Connection cn;
     private SimpleDateFormat dateIn = new SimpleDateFormat("dd/MM/yyyy");
+    private PreparedStatement stmt;
+    private ResultSet rs;
 
-    public ImprimeRelatorio(ConexaoMySQL conn) {
-        this.cn = conn;
+    public ImprimeRelatorio() {
+        this.cn = conn.ConexaoMySQL.conexao;
     }
 
     public void imprimir(String sql, String relatorio, String titulo) {
@@ -36,10 +41,11 @@ public class ImprimeRelatorio {
         String rel = "./src/reports/" + relatorio;//"reports/Capa.jasper";
 
         try {
-            cn.iniciarTransacao();
-            cn.executeConsulta(sql);
+            
+            stmt = cn.prepareStatement(sql);
+            rs = stmt.executeQuery();
 
-            JRResultSetDataSource relatResult = new JRResultSetDataSource(cn.rs);
+            JRResultSetDataSource relatResult = new JRResultSetDataSource(rs);
 
             JasperPrint jasperprint;
             jasperprint = JasperFillManager.fillReport(rel, new HashMap(), relatResult);
@@ -53,7 +59,7 @@ public class ImprimeRelatorio {
         } catch (JRException | NullPointerException | SQLException je) {
             JOptionPane.showMessageDialog(null, je);
         } finally {
-            cn.finalizarTransacao(true);
+            conn.ConexaoMySQL.finalizarTransacao(true);
         }
 
     }
@@ -64,15 +70,16 @@ public class ImprimeRelatorio {
         //String rel_sub = "./src/reports/conhecimentosRpa_detalhe.jasper";//"reports/Capa.jasper";
 
         try {
-            cn.iniciarTransacao();
-            cn.executeConsulta(sql);
 
-            JRResultSetDataSource relatResult = new JRResultSetDataSource(cn.rs);
+            stmt = cn.prepareStatement(sql);
+            rs = stmt.executeQuery();
+
+            JRResultSetDataSource relatResult = new JRResultSetDataSource(rs);
             Map<String, Object> parametros = new HashMap<String, Object>();
             parametros.put("dataInicio", dti);
             parametros.put("dataFim", dtf);
             parametros.put("SUBREPORT_DIR", "./src/reports/");
-            parametros.put("REPORT_CONNECTION", cn.getConexao());
+            parametros.put("REPORT_CONNECTION", cn);
             parametros.put("detalhe", param1);
             parametros.put("totalUnidades", param2);
             System.out.println("Parametros definidos: " + parametros);
@@ -91,7 +98,7 @@ public class ImprimeRelatorio {
         } catch (Exception je) {
             JOptionPane.showMessageDialog(null, je);
         } finally {
-            cn.finalizarTransacao(true);
+            conn.ConexaoMySQL.finalizarTransacao(true);
         }
     }
 

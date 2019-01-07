@@ -11,6 +11,8 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JFrame;
 import javax.swing.JTextField;
 import javax.swing.event.CaretEvent;
@@ -18,109 +20,137 @@ import javax.swing.event.CaretListener;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.PlainDocument;
+
 /**
  * Campo para a inserção de números com base em um formato.
  *
  * @author Dyorgio da Silva Nascimento
  */
 public class JNumberFormatField99 extends JTextField {
+
     private static final long serialVersionUID = -7506506392528621022L;
     private static final NumberFormat MONETARY_FORMAT = new DecimalFormat("R$ #,##0.00");
     private NumberFormat numberFormat;
     private int limit = -1;
+
     public JNumberFormatField99(int casasDecimais) {
+        
         this(new DecimalFormat((casasDecimais == 0 ? "#,##0" : "#,##0.") + makeZeros(casasDecimais)));
+        
+
     }
+
     public JNumberFormatField99() {
         this(MONETARY_FORMAT);
     }
-    public JNumberFormatField99(NumberFormat format) {// define o formato do
-        // número
-        numberFormat = format;// alinhamento horizontal para o texto
-        setHorizontalAlignment(RIGHT);// documento responsável pela formatação
-        // do campo
-        setDocument(new PlainDocument() {
-            private static final long serialVersionUID = 1L;
-            @Override
-            public void insertString(int offs, String str, AttributeSet a) throws BadLocationException {
-                String text = new StringBuilder(JNumberFormatField99.this.getText().replaceAll("[^0-9]", "")).append(str.replaceAll("[^0-9]", "")).toString();
-                super.remove(0, getLength());
-                if (text.isEmpty()) {
-                    text = "0";
-                } else {
-                    text = new BigInteger(text).toString();
+
+    public JNumberFormatField99(NumberFormat format) {// define o formato do número
+        try {
+            numberFormat = format;// alinhamento horizontal para o texto
+            setHorizontalAlignment(RIGHT);// documento responsável pela formatação
+            // do campo
+            setDocument(new PlainDocument() {
+                private static final long serialVersionUID = 1L;
+
+                @Override
+                public void insertString(int offs, String str, AttributeSet a) throws BadLocationException {
+                    String text = new StringBuilder(JNumberFormatField99.this.getText().replaceAll("[^0-9]", "")).append(str.replaceAll("[^0-9]", "")).toString();
+                    super.remove(0, getLength());
+                    if (text.isEmpty()) {
+                        text = "0";
+                    } else {
+                        text = new BigInteger(text).toString();
+                    }
+                    try {
+                        super.insertString(0, numberFormat.format(new BigDecimal(getLimit() > 0 == text.length() > getLimit() ? text.substring(0, getLimit()) : text).divide(new BigDecimal(Math.pow(10, numberFormat.getMaximumFractionDigits())))), a);
+                    } catch (Exception ex) {
+
+                    }
                 }
-                super.insertString(0, numberFormat.format(new BigDecimal(getLimit() > 0 == text.length() > getLimit() ? text.substring(0, getLimit()) : text).divide(new BigDecimal(Math.pow(10, numberFormat.getMaximumFractionDigits())))), a);
-            }
-            @Override
-            public void remove(int offs, int len) throws BadLocationException {
-                super.remove(offs, len);
-                if (len != getLength()) {
-                    insertString(0, "", null);
+
+                @Override
+                public void remove(int offs, int len) throws BadLocationException {
+                    super.remove(offs, len);
+                    if (len != getLength()) {
+                        insertString(0, "", null);
+                    }
                 }
-            }
-        });// mantem o cursor no final
-        // do campo
-        addCaretListener(new CaretListener() {
-            boolean update = false;
-            @Override
-            public void caretUpdate(CaretEvent e) {
-                if (!update) {
-                    update = true;
-                    setCaretPosition(getText().length());
-                    update = false;
+            });// mantem o cursor no final
+            // do campo
+            addCaretListener(new CaretListener() {
+                boolean update = false;
+
+                @Override
+                public void caretUpdate(CaretEvent e) {
+                    if (!update) {
+                        update = true;
+                        setCaretPosition(getText().length());
+                        update = false;
+                    }
                 }
-            }
-        });// limpa o campo se
-        // apertar DELETE
-        addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_DELETE) {
-                    setText("");
+            });// limpa o campo se
+            // apertar DELETE
+            addKeyListener(new KeyAdapter() {
+                @Override
+                public void keyPressed(KeyEvent e) {
+                    if (e.getKeyCode() == KeyEvent.VK_DELETE) {
+                        setText("0");
+                    }
                 }
-            }
-        });// formato
-        // inicial
-        setText("0");
-        setCaretPosition(getText().length());
+            });// formato
+            // inicial
+            //setText("");
+            setCaretPosition(getText().length());
+        } catch (Exception e) {
+
+        }
     }
-    /***
+
+    /**
+     * *
      * Define um valor BigDecimal ao campo**
      *
      * @param value
      */
-    public void setValue(BigDecimal value) {
+    public void setValue(BigDecimal value) throws Exception {
         super.setText(numberFormat.format(value));
     }
-    /***
+
+    /**
+     * *
      * Recupera um valor BigDecimal do campo**
      *
      * @return
      */
-    public final BigDecimal getValue() {
+    public final BigDecimal getValue() throws Exception {
         return new BigDecimal(getText().replaceAll("[^0-9]", "")).divide(new BigDecimal(Math.pow(10, numberFormat.getMaximumFractionDigits())));
     }
-    /***
+
+    /**
+     * *
      * Recupera o formatador atual do campo**
      *
      * @return
      */
-    public NumberFormat getNumberFormat() {
+    public NumberFormat getNumberFormat() throws Exception {
         return numberFormat;
     }
-    /***
+
+    /**
+     * *
      * Define o formatador do campo** @param numberFormat
      */
-    public void setNumberFormat(NumberFormat numberFormat) {
+    public void setNumberFormat(NumberFormat numberFormat) throws Exception {
         this.numberFormat = numberFormat;
     }
-    /***
+
+    /**
+     * *
      * Preenche um StringBuilder com zeros** @param zeros*
      *
      * @return
      */
-    private static final String makeZeros(int zeros) {
+    private static final String makeZeros(int zeros)  {
         if (zeros >= 0) {
             StringBuilder builder = new StringBuilder();
             for (int i = 0; i < zeros; i++) {
@@ -131,31 +161,40 @@ public class JNumberFormatField99 extends JTextField {
             throw new RuntimeException("Número de casas decimais inválida (" + zeros + ")");
         }
     }
-    /***
+
+    /**
+     * *
      * Recupera o limite do campo.** @return
      */
-    public int getLimit() {
+    public int getLimit() throws Exception {
         return limit;
     }
-    /***
+
+    /**
+     * *
      * Define o limite do campo, limit < 0 para deixar livre (default) Ignora os
      * pontos e virgulas do formato, conta* somente com os números** @param
      * limit
      */
-    public void setLimit(int limit) {
+    public void setLimit(int limit) throws Exception {
         this.limit = limit;
     }
+
     // testes, pode ser removido
     public static void main(String[] args) {
         JFrame frame = new JFrame("Teste do campo");
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setResizable(false);
-        frame.add(new JNumberFormatField99(new DecimalFormat("#,##0.00")) {
-            {// limita a 4
-                // caracteres
-                //setLimit(4);
-            }
-        });
+        try {
+            frame.add(new JNumberFormatField99(0) {
+                {// limita a 4
+                    // caracteres
+                    //setLimit(4);
+                }
+            });
+
+        } catch (Exception e) {
+        }
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);

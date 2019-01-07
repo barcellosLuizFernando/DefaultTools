@@ -7,6 +7,7 @@ package conn;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -31,7 +32,6 @@ public class ConexaoMySQL {
             }
             cn.finalizarTransacao(true);
             cn.desconecta();
-            
 
         } catch (Exception ex) {
             System.out.println(ex + "");
@@ -39,9 +39,10 @@ public class ConexaoMySQL {
         }
 
     }
-    private Connection conexao;
-    public ResultSet rs;
+    public static Connection conexao;
+    private ResultSet rs;
     private Statement st;
+    private PreparedStatement stmt;
 
     /**
      * CONEXÃO PADRÃO PARA MYSQL.
@@ -53,17 +54,20 @@ public class ConexaoMySQL {
      * @throws Exception
      */
     public void conecta(String local, String usuario, String senha, int porta) throws SQLException, ClassNotFoundException {
-
+        System.out.println("MySQL - Requisitando Conexão.");
         String url = "jdbc:mysql://" + local + ":" + porta + "?useLegacyDatetimeCode=false&serverTimezone=UTC";
 
         Class.forName("com.mysql.cj.jdbc.Driver");
         conexao = DriverManager.getConnection(url, usuario, senha);
         conexao.setAutoCommit(false);
+        System.out.println("MySQL - CONECTADO!!!.");
 
     }
 
-    private void desconecta() throws SQLException {
+    public static void desconecta() throws SQLException {
+        System.out.println("MySQL - Desconectando...");
         conexao.close();
+        System.out.println("MySQL - DESCONECTADO!!!");
     }
 
     /**
@@ -90,7 +94,21 @@ public class ConexaoMySQL {
         rs = st.executeQuery(sql);
     }
 
-    public void finalizarTransacao(Boolean commit) {
+    public void prepareStatementAtualizacao(String sql) throws SQLException {
+        stmt = null;
+        stmt = conexao.prepareStatement(sql);
+    }
+
+    public void incluiStringPreparedStatement(int x, String y) throws SQLException {
+        stmt.setString(x, y);
+    }
+
+    public void executePreparedStatement() throws SQLException {
+        stmt.executeUpdate();
+        stmt.close();
+    }
+
+    public static void finalizarTransacao(Boolean commit) {
         try {
             if (commit) {
                 conexao.commit();
